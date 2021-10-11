@@ -2,6 +2,8 @@ package com.justeat.scoober.controller;
 
 import com.justeat.scoober.entity.Input;
 import com.justeat.scoober.entity.Output;
+import com.justeat.scoober.redis.MessagePublisher;
+import com.justeat.scoober.redis.MessagePublisherImpl;
 import com.justeat.scoober.service.ScooberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,11 +20,14 @@ import java.util.Optional;
 public class ScooberController {
     @Autowired
     private ScooberService scooberService;
+    @Autowired
+    private MessagePublisher messagePublisher;
 
     @PostMapping
-    public ResponseEntity<Void> processInput(@RequestBody Input input) {
+    public ResponseEntity<String> processInput(@RequestBody Input input) {
 //        Output output = scooberService.processOpponentInput(input);
-        return ResponseEntity.status(HttpStatus.CREATED).build();
+        messagePublisher.publish(String.valueOf(input));
+        return ResponseEntity.status(HttpStatus.CREATED).body("Created");
     }
 
  /*   public ResponseEntity<Output> callOpponentApi(@RequestBody Input input) {

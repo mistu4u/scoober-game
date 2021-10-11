@@ -8,6 +8,6 @@ import java.util.Optional;
 public interface ScooberService {
     Output processOpponentInput(Input input);
 
-    Optional<Output> sendResponseToOpponent(Input input, String uri);
+    Optional<String> sendResponseToOpponent(Input input, String uri);
 
 }

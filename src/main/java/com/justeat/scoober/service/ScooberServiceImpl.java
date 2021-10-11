@@ -41,17 +41,18 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
     @Override
-    public Optional<Output> sendResponseToOpponent(Input input, String uri) {
+    public Optional<String> sendResponseToOpponent(Input input, String uri) {
         String opponentUrl = System.getProperty("server.url");
         //Call the other service
 //        final Output output = playManual(input);
 //        log.info(String.valueOf(output));
-        return scooberClient.localApiClient().post()
+        Optional<String> output = scooberClient.localApiClient().post()
                 .uri(opponentUrl)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body(Mono.just(input), Input.class).retrieve()
-                .bodyToMono(Output.class).blockOptional();
-
+                .bodyToMono(String.class).blockOptional();
+        log.info("response from post = {}",output);
+        return output;
     }
 
 
