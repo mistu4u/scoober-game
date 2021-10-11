@@ -14,9 +14,10 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 @Configuration
 public class RedisConfig {
 
-    @Autowired
+
     private MessageSubscriber redisMessageSubscriber;
 
+    @Autowired
     public RedisConfig(MessageSubscriber redisMessageSubscriber) {
         this.redisMessageSubscriber = redisMessageSubscriber;
     }
@@ -33,13 +34,14 @@ public class RedisConfig {
 
     @Bean
     public RedisTemplate<String, Input> redisTemplate() {
-        final RedisTemplate<String, Input> template = new RedisTemplate<String, Input>();
+        final RedisTemplate<String, Input> template = new RedisTemplate<>();
         template.setConnectionFactory(jedisConnectionFactory());
-        template.setValueSerializer(new Jackson2JsonRedisSerializer<Input>(Input.class));
+        template.setValueSerializer(new Jackson2JsonRedisSerializer<>(Input.class));
         return template;
     }
+
     @Bean
-    MessageListenerAdapter messageListener( ) {
+    MessageListenerAdapter messageListener() {
         return new MessageListenerAdapter(redisMessageSubscriber);
     }
 

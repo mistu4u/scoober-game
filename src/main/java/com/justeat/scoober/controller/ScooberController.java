@@ -1,9 +1,7 @@
 package com.justeat.scoober.controller;
 
 import com.justeat.scoober.entity.Input;
-import com.justeat.scoober.entity.Output;
 import com.justeat.scoober.redis.MessagePublisher;
-import com.justeat.scoober.redis.MessagePublisherImpl;
 import com.justeat.scoober.service.ScooberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -12,8 +10,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/rs")
@@ -26,7 +22,7 @@ public class ScooberController {
     @PostMapping
     public ResponseEntity<String> processInput(@RequestBody Input input) {
 //        Output output = scooberService.processOpponentInput(input);
-        messagePublisher.publish(String.valueOf(input));
+        messagePublisher.publish(input);
         return ResponseEntity.status(HttpStatus.CREATED).body("Created");
     }
 

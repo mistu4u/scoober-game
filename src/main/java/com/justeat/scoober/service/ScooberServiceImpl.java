@@ -22,7 +22,7 @@ public class ScooberServiceImpl implements ScooberService {
     private final int ROOT = 3;
     private final int ONE = 1;
     private final String selfPlayerType = System.getProperty("player.type");
-    private final String selfPlayerId = System.getProperty("player.name");
+    private final String selfPlayerName = System.getProperty("player.name");
     @Autowired
     private ScooberClient scooberClient;
 
@@ -41,18 +41,32 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
     @Override
-    public Optional<String> sendResponseToOpponent(Input input, String uri) {
+    public Optional<String> challengeOpponent(Input input, String uri) {
         String opponentUrl = System.getProperty("server.url");
         //Call the other service
 //        final Output output = playManual(input);
 //        log.info(String.valueOf(output));
         Optional<String> output = scooberClient.localApiClient().post()
                 .uri(opponentUrl)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(Mono.just(input), Input.class).retrieve()
                 .bodyToMono(String.class).blockOptional();
-        log.info("response from post = {}",output);
+        log.info("response from post = {}", output);
         return output;
+    }
+
+    @Override
+    public void startGame() {
+        log.info("\nChoose 1 of the following. 1) Initiate \n 2) Wait for the opponent's turn ->");
+        Scanner scanner = new Scanner(System.in);
+        if (scanner.nextInt() == 1) {
+            log.info("Please provide the starting number ->");
+            int init = scanner.nextInt();
+            challengeOpponent(Input.builder()
+                    .input(init).playerType(this.selfPlayerType).playerName(this.selfPlayerName)
+                    .build(), System.getProperty("server.url"));
+        }
+
     }
 
 
@@ -66,19 +80,19 @@ public class ScooberServiceImpl implements ScooberService {
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
         if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
-            log.info("Player {} won", input.getPlayerNumber());
+            log.info("Player {} won", input.getPlayerName());
         }
         if (inputReceived % ROOT == 0) {
             output = Output.builder().result(inputReceived / ROOT)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+                    .playerType(selfPlayerType).build();
         }
         if ((inputReceived + ONE) % ROOT == 0) {
             output = Output.builder().added(ONE).result(inputReceived + ONE)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+                    .playerType(selfPlayerType).build();
         }
         if ((inputReceived - ONE) % ROOT == 0) {
             output = Output.builder().added(-ONE).result(inputReceived - ONE)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+                    .playerType(selfPlayerType).build();
         }
         log.info(String.valueOf(output));
         return output;

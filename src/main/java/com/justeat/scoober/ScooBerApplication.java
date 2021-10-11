@@ -9,6 +9,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
+import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.Scanner;
@@ -19,10 +20,12 @@ import java.util.Scanner;
 public class ScooBerApplication implements CommandLineRunner {
     private ScooberService scooberService;
     private static String playerType;
+
     @Autowired
     public ScooBerApplication(ScooberService scooberService) {
         this.scooberService = scooberService;
     }
+
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         //Prompt to get player name
@@ -36,8 +39,11 @@ public class ScooBerApplication implements CommandLineRunner {
 
         log.info("\nEnter the port number of this client application: ");
         int selfPort = scanner.nextInt();
-        log.info("\nEnter the ip of the opponent or localhost if running locally: ");
+        log.info("\nEnter the ip of the opponent or press enter if running locally: ");
         String ip = scanner.next();
+        if(ip.isBlank()){
+            ip = "localhost";
+        }
         log.info("\nEnter the port of the other client application: ");
         String port = scanner.next();
         System.setProperty("player.name", username);
@@ -52,19 +58,7 @@ public class ScooBerApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        start();
+        scooberService.startGame();
     }
 
-    private void start() {
-        log.info("\nChoose 1 of the following. 1) Initiate \n 2) Wait for the opponent's turn ->");
-        Scanner scanner = new Scanner(System.in);
-        if (scanner.nextInt() == 1) {
-            log.info("Please provide the starting number ->");
-            int init = scanner.nextInt();
-            scooberService
-                    .sendResponseToOpponent(Input.builder()
-                            .input(init).playerType(playerType)
-                            .build(), System.getProperty("server.url"));
-        }
-    }
 }

@@ -22,7 +22,7 @@ public class MessagePublisherImpl implements MessagePublisher {
         this.topic = topic;
     }
 
-    public void publish(final String message) {
+    public void publish(final Input message) {
         redisTemplate.convertAndSend(topic.getTopic(), message);
     }
 
