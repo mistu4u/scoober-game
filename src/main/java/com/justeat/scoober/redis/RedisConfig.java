@@ -1,6 +1,7 @@
 package com.justeat.scoober.redis;
 
 import com.justeat.scoober.entity.Input;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,6 +14,7 @@ import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 
 @Configuration
+@Slf4j
 public class RedisConfig {
 
 
@@ -57,6 +59,7 @@ public class RedisConfig {
                 = new RedisMessageListenerContainer();
         container.setConnectionFactory(jedisConnectionFactory());
         container.addMessageListener(messageListener(), selfTopic());
+        log.info("Listener registered for topic {}", selfTopic().getTopic());
         return container;
     }
 

@@ -34,6 +34,7 @@ public class MessageSubscriber implements MessageListener {
         }
         else{
             log.info("Player {} won the game ", input.getPlayerName());
+            scooberService.stopGame(input);
 //            scooberService.playAgain();
         }
     }

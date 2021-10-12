@@ -1,6 +1,7 @@
 package com.justeat.scoober.redis;
 
 import com.justeat.scoober.entity.Input;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -8,6 +9,7 @@ import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 public class MessagePublisherImpl implements MessagePublisher {
     @Autowired
     private RedisTemplate<String, Input> redisTemplate;
@@ -24,6 +26,7 @@ public class MessagePublisherImpl implements MessagePublisher {
     }
 
     public void publish(final Input message) {
+        log.info("message published to topic {}",topic.getTopic());
         redisTemplate.convertAndSend(topic.getTopic(), message);
     }
 

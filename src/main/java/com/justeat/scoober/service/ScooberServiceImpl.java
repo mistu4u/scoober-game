@@ -4,8 +4,10 @@ import com.justeat.scoober.config.ScooberClient;
 import com.justeat.scoober.entity.Input;
 import com.justeat.scoober.entity.Output;
 import com.justeat.scoober.entity.PlayerType;
+import com.justeat.scoober.redis.MessagePublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,9 @@ public class ScooberServiceImpl implements ScooberService {
     private final String selfPlayerName = System.getProperty("player.name");
     @Autowired
     private ScooberClient scooberClient;
+    @Autowired
+    @Qualifier("publisher")
+    private MessagePublisher messagePublisher;
 
     @Override
     public Input processOpponentInput(Input input) {
@@ -42,7 +47,7 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
     private Input outputToInputConverter(Output output, Input input) {
-        return Input.builder().input(output.getResult())
+        return Input.builder().input(output.getResult()).isWinner(output.isWinner())
                 .playerName(input.getPlayerName()).build();
     }
 
@@ -50,13 +55,14 @@ public class ScooberServiceImpl implements ScooberService {
     public Optional<String> challengeOpponent(Input input) {
         String opponentUrl = System.getProperty("server.url");
         //Call the other client
-        Optional<String> output = scooberClient.localApiClient().post()
+       /* Optional<String> output = scooberClient.localApiClient().post()
                 .uri(opponentUrl)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Mono.just(input), Input.class).retrieve()
-                .bodyToMono(String.class).blockOptional();
-        log.info("response from post = {}", output);
-        return output;
+                .bodyToMono(String.class).blockOptional();*/
+//        log.info("response from post = {}", output);
+        messagePublisher.publish(input);
+        return Optional.of("message sent");
     }
 
     /**
@@ -85,6 +91,11 @@ public class ScooberServiceImpl implements ScooberService {
         }
     }
 
+    @Override
+    public void stopGame(Input input) {
+        log.info("Since the winner is decided, stopped the game");
+    }
+
 
     private Output playManual(Input input) {
         log.info("Enter the number to be added (+1,-1 or 0) ->");
@@ -97,8 +108,9 @@ public class ScooberServiceImpl implements ScooberService {
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
         if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
-            log.info("Player {} won", input.getPlayerName());
-            return Output.builder().winner(true).build();
+            log.info("Player {} won ", input.getPlayerName());
+            log.info(String.valueOf(output));
+            return Output.builder().result(-1).winner(true).build();
         }
         if (inputReceived % ROOT == 0) {
             output = Output.builder().result(inputReceived / ROOT)

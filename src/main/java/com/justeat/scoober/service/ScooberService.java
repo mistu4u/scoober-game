@@ -13,4 +13,6 @@ public interface ScooberService {
     void startGame();
 
     void playAgain();
+
+    void stopGame(Input input);
 }

@@ -24,7 +24,7 @@ public class ScooberController {
     @PostMapping
     public ResponseEntity<String> processInput(@RequestBody Input input) {
 //        Output output = scooberService.processOpponentInput(input);
-        messagePublisher.publish(input);
+//        messagePublisher.publish(input);
         return ResponseEntity.status(HttpStatus.CREATED).body("Created");
     }
 
