@@ -27,25 +27,29 @@ public class ScooberServiceImpl implements ScooberService {
     private ScooberClient scooberClient;
 
     @Override
-    public Output processOpponentInput(Input input) {
+    public Input processOpponentInput(Input input) {
         Output output = Output.builder().build();
-        if (input.getPlayerType().equals(PlayerType.AUTOMATIC.getPlayerType())) {
+        if (selfPlayerType.equals(PlayerType.AUTOMATIC.getPlayerType())) {
             output = playAutomatic(input, output);
-        } else if (input.getPlayerType().equals(PlayerType.MANUAL.getPlayerType())) {
+        } else if (selfPlayerType.equals(PlayerType.MANUAL.getPlayerType())) {
             output = playManual(input);
         } else {
             throw new RuntimeException("Player type must be either A or M");
         }
 
-        return output;
+        return outputToInputConverter(output, input);
+
+    }
+
+    private Input outputToInputConverter(Output output, Input input) {
+        return Input.builder().input(output.getResult())
+                .playerName(input.getPlayerName()).build();
     }
 
     @Override
-    public Optional<String> challengeOpponent(Input input, String uri) {
+    public Optional<String> challengeOpponent(Input input) {
         String opponentUrl = System.getProperty("server.url");
-        //Call the other service
-//        final Output output = playManual(input);
-//        log.info(String.valueOf(output));
+        //Call the other client
         Optional<String> output = scooberClient.localApiClient().post()
                 .uri(opponentUrl)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -55,6 +59,9 @@ public class ScooberServiceImpl implements ScooberService {
         return output;
     }
 
+    /**
+     * Function to start the game
+     */
     @Override
     public void startGame() {
         log.info("\nChoose 1 of the following. 1) Initiate \n 2) Wait for the opponent's turn ->");
@@ -63,10 +70,19 @@ public class ScooberServiceImpl implements ScooberService {
             log.info("Please provide the starting number ->");
             int init = scanner.nextInt();
             challengeOpponent(Input.builder()
-                    .input(init).playerType(this.selfPlayerType).playerName(this.selfPlayerName)
-                    .build(), System.getProperty("server.url"));
+                    .input(init).playerName(this.selfPlayerName)
+                    .build());
         }
 
+    }
+
+    @Override
+    public void playAgain() {
+        log.info("Do you want to play again? [y/n] ->");
+        Scanner sc = new Scanner(System.in);
+        if (sc.next().equalsIgnoreCase("Y")) {
+            startGame();
+        }
     }
 
 
@@ -74,13 +90,15 @@ public class ScooberServiceImpl implements ScooberService {
         log.info("Enter the number to be added (+1,-1 or 0) ->");
         Scanner scanner = new Scanner(System.in);
         scanner.next();
-        return Output.builder().added(input.getAdd()).result(input.getInput() + input.getAdd()).build();
+        return Output.builder()
+                .added(input.getAdd()).result(input.getInput() + input.getAdd()).build();
     }
 
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
         if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
             log.info("Player {} won", input.getPlayerName());
+            return Output.builder().winner(true).build();
         }
         if (inputReceived % ROOT == 0) {
             output = Output.builder().result(inputReceived / ROOT)

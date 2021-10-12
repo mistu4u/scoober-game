@@ -17,8 +17,8 @@ import java.util.List;
 @Service
 @Slf4j
 public class MessageSubscriber implements MessageListener {
-@Autowired
-private ScooberService scooberService;
+    @Autowired
+    private ScooberService scooberService;
     private List<String> messageList = new ArrayList<>();
     ObjectMapper objectMapper = new ObjectMapper();
 
@@ -27,7 +27,15 @@ private ScooberService scooberService;
         objectMapper.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
         messageList.add(message.toString());
         log.info("Message received: " + message);
-        scooberService.processOpponentInput(objectMapper.readValue(message.toString(), Input.class));
+        Input input = scooberService
+                .processOpponentInput(objectMapper.readValue(message.toString(), Input.class));
+        if (!input.isWinner()) {
+            scooberService.challengeOpponent(input);
+        }
+        else{
+            log.info("Player {} won the game ", input.getPlayerName());
+//            scooberService.playAgain();
+        }
     }
 
 }

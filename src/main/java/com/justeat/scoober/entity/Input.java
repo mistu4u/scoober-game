@@ -19,6 +19,6 @@ public class Input {
     public int input;
     @JsonProperty("add")
     public int add;
-    @JsonProperty("playerType")
-    public String playerType;
+    @JsonProperty("winner")
+    boolean isWinner;
 }

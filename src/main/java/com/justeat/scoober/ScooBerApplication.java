@@ -45,13 +45,16 @@ public class ScooBerApplication implements CommandLineRunner {
             ip = "localhost";
         }
         log.info("\nEnter the topic name for this client: -> ");
-        String topic = scanner.next();
+        String selfTopic = scanner.next();
+        log.info("\nEnter the topic name for the other client: -> ");
+        String clientTopic = scanner.next();
         log.info("\nEnter the port of the other client application: ");
         String port = scanner.next();
         System.setProperty("player.name", username);
         System.setProperty("player.type", playerType);
         System.setProperty("server.url", "http://" + ip + ":" + port + "/rs");
-        System.setProperty("redis.topic", topic);
+        System.setProperty("redis.topic.self", selfTopic);
+        System.setProperty("redis.topic.client", clientTopic);
         log.info("\nProperties set, bringing up the application");
         SpringApplication app = new SpringApplication(ScooBerApplication.class);
         app.setDefaultProperties(Collections

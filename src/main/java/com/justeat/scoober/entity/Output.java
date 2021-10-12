@@ -9,4 +9,5 @@ public class Output {
     int result;
     int added;
     String playerType;
+    boolean winner;
 }

@@ -6,10 +6,11 @@ import com.justeat.scoober.entity.Output;
 import java.util.Optional;
 
 public interface ScooberService {
-    Output processOpponentInput(Input input);
+    Input processOpponentInput(Input input);
 
-    Optional<String> challengeOpponent(Input input, String uri);
+    Optional<String> challengeOpponent(Input input);
 
     void startGame();
 
+    void playAgain();
 }

@@ -4,6 +4,7 @@ import com.justeat.scoober.entity.Input;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -27,9 +28,14 @@ public class RedisConfig {
         return new JedisConnectionFactory();
     }
 
-    @Bean
-    ChannelTopic topic() {
-        return new ChannelTopic(System.getProperty("redis.topic"));
+    @Bean("selfTopic")
+    ChannelTopic selfTopic() {
+        return new ChannelTopic(System.getProperty("redis.topic.self"));
+    }
+
+    @Bean("clientTopic")
+    ChannelTopic clientTopic() {
+        return new ChannelTopic(System.getProperty("redis.topic.client"));
     }
 
     @Bean
@@ -50,7 +56,13 @@ public class RedisConfig {
         RedisMessageListenerContainer container
                 = new RedisMessageListenerContainer();
         container.setConnectionFactory(jedisConnectionFactory());
-        container.addMessageListener(messageListener(), topic());
+        container.addMessageListener(messageListener(), selfTopic());
         return container;
+    }
+
+    @Bean("publisher")
+    @Primary
+    MessagePublisher redisPublisher() {
+        return new MessagePublisherImpl(redisTemplate(), clientTopic());
     }
 }
