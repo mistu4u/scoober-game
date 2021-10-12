@@ -1,7 +1,6 @@
 package com.justeat.scoober.service;
 
 import com.justeat.scoober.entity.Input;
-import com.justeat.scoober.entity.Output;
 
 import java.util.Optional;
 

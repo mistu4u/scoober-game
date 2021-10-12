@@ -1,9 +1,9 @@
 package com.justeat.scoober.service;
 
-import com.justeat.scoober.config.ScooberClient;
 import com.justeat.scoober.entity.Input;
 import com.justeat.scoober.entity.Output;
 import com.justeat.scoober.entity.PlayerType;
+import com.justeat.scoober.exception.ScooberException;
 import com.justeat.scoober.redis.MessagePublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,14 +17,13 @@ import java.util.Scanner;
 @Service
 @Slf4j
 public class ScooberServiceImpl implements ScooberService {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
-    private final int ROOT = 3;
-    private final int ONE = 1;
-    private final int ZERO = 0;
+    Scanner userInput = new Scanner(System.in);
+    private static final int ROOT = 3;
+    private static final int ONE = 1;
+    private static final int ZERO = 0;
     private final String selfPlayerType = System.getProperty("player.type");
     private final String selfPlayerName = System.getProperty("player.name");
-    @Autowired
-    private ScooberClient scooberClient;
+
     @Autowired
     @Qualifier("publisher")
     private MessagePublisher messagePublisher;
@@ -32,22 +31,30 @@ public class ScooberServiceImpl implements ScooberService {
     @Override
     public Input processOpponentInput(Input input) {
         Output output = Output.builder().build();
+        if (input.isWinner()) {
+            stopPlaying(input);
+        }
         if (selfPlayerType.equals(PlayerType.AUTOMATIC.getPlayerType())) {
             output = playAutomatic(input, output);
         } else if (selfPlayerType.equals(PlayerType.MANUAL.getPlayerType())) {
             output = playManual(input, output);
         } else {
-            throw new RuntimeException("Player type must be either A or M");
+            throw new ScooberException("Player type must be either A or M");
         }
 
         return outputToInputConverter(output);
 
     }
 
+    private void stopPlaying(Input input) {
+        log.info("Opponent {} has won the game", input.getPlayerName());
+        playAgain();
+    }
+
     private Input outputToInputConverter(Output output) {
-        log.info("output {} being converted to input ", String.valueOf(output));
+        log.info("output {} being converted to input ", output);
         return Input.builder().input(output.getResult()).isWinner(output.isWinner())
-                .playerName(System.getProperty("player.name")).build();
+                .playerName(System.getProperty("player.name")).add(output.getAdded()).build();
     }
 
     @Override
@@ -61,14 +68,17 @@ public class ScooberServiceImpl implements ScooberService {
      */
     @Override
     public void startGame() {
-        log.info("\nChoose 1 of the following. 1) Initiate \n 2) Wait for the opponent's turn ->");
+        log.info("\nChoose 1 of the following. \na) Initiate \nb) Wait for the opponent's turn ->");
         Scanner scanner = new Scanner(System.in);
-        if (scanner.nextInt() == 1) {
+        if (scanner.nextLine().equalsIgnoreCase("a")) {
             log.info("Please provide the starting number ->");
-            int init = scanner.nextInt();
+            int init = Integer.parseInt(scanner.nextLine());
             challengeOpponent(Input.builder()
                     .input(init).playerName(this.selfPlayerName)
                     .build());
+        } else {
+            log.info("Waiting for the opponent's turn");
+            //empty block, wait for the opponent's response
         }
 
     }
@@ -84,7 +94,10 @@ public class ScooberServiceImpl implements ScooberService {
 
     @Override
     public void stopGame(Input input) {
+        log.info("Sending message to opponent about the win");
+        messagePublisher.publish(input);
         log.info("Since the winner is decided, stopped the game");
+        playAgain();
     }
 
 
@@ -93,10 +106,10 @@ public class ScooberServiceImpl implements ScooberService {
             return Output.builder().result(-1).winner(true).build();
         }
         log.info("Enter the number to be added (+1,-1 or 0) ->");
-        Scanner scanner = new Scanner(System.in);
-        String added = scanner.next();
+        String userInputstr = userInput.nextLine();
+        int added = Integer.parseInt(userInputstr);
         return Output.builder()
-                .added(Integer.parseInt(added)).result(input.getInput() + input.getAdd()).build();
+                .added(added).result((input.getInput() + added) / ROOT).build();
     }
 
     private Output playAutomatic(Input input, Output output) {
@@ -122,11 +135,12 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
     private boolean isWinner(Output output, int inputReceived) {
-        if ((((inputReceived + ONE) / ROOT == ONE)) ||
-                ((inputReceived - ONE) / ROOT == ONE) || (inputReceived / ROOT) == ONE) {
-            log.info("Player {} won ", System.getProperty("player.name"));
-            log.info(String.valueOf(output));
-            return true;
+        if (inputReceived <= ROOT) {
+            if ((inputReceived + ONE) / ROOT == ONE || inputReceived / ROOT == ONE) {
+                log.info("Player {} won ", System.getProperty("player.name"));
+                log.info(String.valueOf(output));
+                return true;
+            }
         }
         return false;
     }
