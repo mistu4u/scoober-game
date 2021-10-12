@@ -29,7 +29,7 @@ public class RedisConfig {
 
     @Bean
     ChannelTopic topic() {
-        return new ChannelTopic("payments");
+        return new ChannelTopic(System.getProperty("redis.topic"));
     }
 
     @Bean

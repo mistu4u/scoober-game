@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class MessagePublisherImpl implements MessagePublisher {
-
     @Autowired
     private RedisTemplate<String, Input> redisTemplate;
     @Autowired
