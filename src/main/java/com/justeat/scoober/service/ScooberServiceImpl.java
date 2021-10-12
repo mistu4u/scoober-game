@@ -42,25 +42,17 @@ public class ScooberServiceImpl implements ScooberService {
             throw new RuntimeException("Player type must be either A or M");
         }
 
-        return outputToInputConverter(output, input);
+        return outputToInputConverter(output);
 
     }
 
-    private Input outputToInputConverter(Output output, Input input) {
+    private Input outputToInputConverter(Output output) {
         return Input.builder().input(output.getResult()).isWinner(output.isWinner())
-                .playerName(input.getPlayerName()).build();
+                .playerName(System.getProperty("player.name")).build();
     }
 
     @Override
     public Optional<String> challengeOpponent(Input input) {
-        String opponentUrl = System.getProperty("server.url");
-        //Call the other client
-       /* Optional<String> output = scooberClient.localApiClient().post()
-                .uri(opponentUrl)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(input), Input.class).retrieve()
-                .bodyToMono(String.class).blockOptional();*/
-//        log.info("response from post = {}", output);
         messagePublisher.publish(input);
         return Optional.of("message sent");
     }
@@ -108,7 +100,7 @@ public class ScooberServiceImpl implements ScooberService {
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
         if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
-            log.info("Player {} won ", input.getPlayerName());
+            log.info("Player {} won ", System.getProperty("player.name"));
             log.info(String.valueOf(output));
             return Output.builder().result(-1).winner(true).build();
         }
