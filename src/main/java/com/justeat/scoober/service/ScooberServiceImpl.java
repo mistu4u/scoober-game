@@ -8,10 +8,7 @@ import com.justeat.scoober.redis.MessagePublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 import java.time.Duration;
 import java.util.Optional;
@@ -23,6 +20,7 @@ public class ScooberServiceImpl implements ScooberService {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
     private final int ROOT = 3;
     private final int ONE = 1;
+    private final int ZERO = 0;
     private final String selfPlayerType = System.getProperty("player.type");
     private final String selfPlayerName = System.getProperty("player.name");
     @Autowired
@@ -37,7 +35,7 @@ public class ScooberServiceImpl implements ScooberService {
         if (selfPlayerType.equals(PlayerType.AUTOMATIC.getPlayerType())) {
             output = playAutomatic(input, output);
         } else if (selfPlayerType.equals(PlayerType.MANUAL.getPlayerType())) {
-            output = playManual(input);
+            output = playManual(input, output);
         } else {
             throw new RuntimeException("Player type must be either A or M");
         }
@@ -47,6 +45,7 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
     private Input outputToInputConverter(Output output) {
+        log.info("output {} being converted to input ", String.valueOf(output));
         return Input.builder().input(output.getResult()).isWinner(output.isWinner())
                 .playerName(System.getProperty("player.name")).build();
     }
@@ -89,34 +88,46 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
 
-    private Output playManual(Input input) {
+    private Output playManual(Input input, Output output) {
+        if (isWinner(output, input.getInput())) {
+            return Output.builder().result(-1).winner(true).build();
+        }
         log.info("Enter the number to be added (+1,-1 or 0) ->");
         Scanner scanner = new Scanner(System.in);
-        scanner.next();
+        String added = scanner.next();
         return Output.builder()
-                .added(input.getAdd()).result(input.getInput() + input.getAdd()).build();
+                .added(Integer.parseInt(added)).result(input.getInput() + input.getAdd()).build();
     }
 
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
-        if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
-            log.info("Player {} won ", System.getProperty("player.name"));
-            log.info(String.valueOf(output));
+        if (inputReceived % ROOT == 0 && inputReceived > ROOT) {
+            return Output.builder().result(inputReceived / ROOT)
+                    .playerType(selfPlayerType).build();
+        }
+        int afterOps = inputReceived + ONE;
+        if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            return Output.builder().added(ONE).result(afterOps / ROOT)
+                    .playerType(selfPlayerType).build();
+        }
+        afterOps = inputReceived - ONE;
+        if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            return Output.builder().added(-ONE).result(afterOps / ROOT)
+                    .playerType(selfPlayerType).build();
+        }
+        if (isWinner(output, inputReceived)) {
             return Output.builder().result(-1).winner(true).build();
         }
-        if (inputReceived % ROOT == 0) {
-            output = Output.builder().result(inputReceived / ROOT)
-                    .playerType(selfPlayerType).build();
-        }
-        if ((inputReceived + ONE) % ROOT == 0) {
-            output = Output.builder().added(ONE).result(inputReceived + ONE)
-                    .playerType(selfPlayerType).build();
-        }
-        if ((inputReceived - ONE) % ROOT == 0) {
-            output = Output.builder().added(-ONE).result(inputReceived - ONE)
-                    .playerType(selfPlayerType).build();
-        }
-        log.info(String.valueOf(output));
         return output;
+    }
+
+    private boolean isWinner(Output output, int inputReceived) {
+        if ((((inputReceived + ONE) / ROOT == ONE)) ||
+                ((inputReceived - ONE) / ROOT == ONE) || (inputReceived / ROOT) == ONE) {
+            log.info("Player {} won ", System.getProperty("player.name"));
+            log.info(String.valueOf(output));
+            return true;
+        }
+        return false;
     }
 }
