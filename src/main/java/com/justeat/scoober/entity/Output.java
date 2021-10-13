@@ -8,6 +8,6 @@ import lombok.Data;
 public class Output {
     int result;
     int added;
-    int player;
     String playerType;
+    boolean winner;
 }

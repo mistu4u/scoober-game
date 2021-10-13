@@ -1,85 +1,148 @@
 package com.justeat.scoober.service;
 
-import com.justeat.scoober.config.ScooberClient;
 import com.justeat.scoober.entity.Input;
 import com.justeat.scoober.entity.Output;
 import com.justeat.scoober.entity.PlayerType;
+import com.justeat.scoober.exception.ScooberException;
+import com.justeat.scoober.redis.MessagePublisher;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Scanner;
 
 @Service
 @Slf4j
 public class ScooberServiceImpl implements ScooberService {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
-    private final int ROOT = 3;
-    private final int ONE = 1;
+    Scanner userInput = new Scanner(System.in);
+    private static final int ROOT = 3;
+    private static final int ONE = 1;
+    private static final int ZERO = 0;
     private final String selfPlayerType = System.getProperty("player.type");
-    private final String selfPlayerId = System.getProperty("player.name");
+    private final String selfPlayerName = System.getProperty("player.name");
+
     @Autowired
-    private ScooberClient scooberClient;
+    @Qualifier("publisher")
+    private MessagePublisher messagePublisher;
 
     @Override
-    public Output processOpponentInput(Input input) {
+    public Input processOpponentInput(Input input) {
         Output output = Output.builder().build();
-        if (input.getPlayerType().equals(PlayerType.AUTOMATIC.getPlayerType())) {
+        if (input.isWinner()) {
+            stopPlaying(input);
+        }
+        if (selfPlayerType.equals(PlayerType.AUTOMATIC.getPlayerType())) {
             output = playAutomatic(input, output);
-        } else if (input.getPlayerType().equals(PlayerType.MANUAL.getPlayerType())) {
-            output = playManual(input);
+        } else if (selfPlayerType.equals(PlayerType.MANUAL.getPlayerType())) {
+            output = playManual(input, output);
         } else {
-            throw new RuntimeException("Player type must be either A or M");
+            throw new ScooberException("Player type must be either A or M");
         }
 
-        return output;
+        return outputToInputConverter(output);
+
+    }
+
+    private void stopPlaying(Input input) {
+        log.info("Opponent {} has won the game", input.getPlayerName());
+        playAgain();
+    }
+
+    private Input outputToInputConverter(Output output) {
+        log.info("output {} being converted to input ", output);
+        return Input.builder().input(output.getResult()).isWinner(output.isWinner())
+                .playerName(System.getProperty("player.name")).add(output.getAdded()).build();
     }
 
     @Override
-    public Optional<Output> sendResponseToOpponent(Input input, String uri) {
-        String opponentUrl = System.getProperty("server.url");
-        //Call the other service
-//        final Output output = playManual(input);
-//        log.info(String.valueOf(output));
-        return scooberClient.localApiClient().post()
-                .uri(opponentUrl)
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                .body(Mono.just(input), Input.class).retrieve()
-                .bodyToMono(Output.class).blockOptional();
+    public Optional<String> challengeOpponent(Input input) {
+        messagePublisher.publish(input);
+        return Optional.of("message sent");
+    }
+
+    /**
+     * Function to start the game
+     */
+    @Override
+    public void startGame() {
+        log.info("\nChoose 1 of the following. \na) Initiate \nb) Wait for the opponent's turn ->");
+        Scanner scanner = new Scanner(System.in);
+        while (scanner.hasNextLine()) {
+            if (scanner.nextLine().equalsIgnoreCase("a")) {
+                log.info("Please provide the starting number ->");
+                int init = Integer.parseInt(scanner.nextLine());
+                challengeOpponent(Input.builder()
+                        .input(init).playerName(this.selfPlayerName)
+                        .build());
+            } else {
+                log.info("Waiting for the opponent's turn");
+                //empty block, wait for the opponent's response
+            }
+        }
 
     }
 
+    @Override
+    public void playAgain() {
+        log.info("Do you want to play again? [y/n] ->");
+        Scanner sc = new Scanner(System.in);
+        if (sc.next().equalsIgnoreCase("Y")) {
+            startGame();
+        }
+    }
 
-    private Output playManual(Input input) {
+    @Override
+    public void stopGame(Input input) {
+        log.info("Sending message to opponent about the win");
+        messagePublisher.publish(input);
+        log.info("Since the winner is decided, stopped the game");
+        playAgain();
+    }
+
+
+    private Output playManual(Input input, Output output) {
+        if (isWinner(output, input.getInput())) {
+            return Output.builder().result(-1).winner(true).build();
+        }
         log.info("Enter the number to be added (+1,-1 or 0) ->");
-        Scanner scanner = new Scanner(System.in);
-        scanner.next();
-        return Output.builder().added(input.getAdd()).result(input.getInput() + input.getAdd()).build();
+        String userInputstr = userInput.nextLine();
+        int added = Integer.parseInt(userInputstr);
+        return Output.builder()
+                .added(added).result((input.getInput() + added) / ROOT).build();
     }
 
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
-        if (inputReceived % ROOT == 0 && inputReceived / ROOT == ONE) {
-            log.info("Player {} won", input.getPlayerNumber());
+        if (inputReceived % ROOT == 0 && inputReceived > ROOT) {
+            return Output.builder().result(inputReceived / ROOT)
+                    .playerType(selfPlayerType).build();
         }
-        if (inputReceived % ROOT == 0) {
-            output = Output.builder().result(inputReceived / ROOT)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+        int afterOps = inputReceived + ONE;
+        if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            return Output.builder().added(ONE).result(afterOps / ROOT)
+                    .playerType(selfPlayerType).build();
         }
-        if ((inputReceived + ONE) % ROOT == 0) {
-            output = Output.builder().added(ONE).result(inputReceived + ONE)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+        afterOps = inputReceived - ONE;
+        if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            return Output.builder().added(-ONE).result(afterOps / ROOT)
+                    .playerType(selfPlayerType).build();
         }
-        if ((inputReceived - ONE) % ROOT == 0) {
-            output = Output.builder().added(-ONE).result(inputReceived - ONE)
-                    .player(Integer.parseInt(selfPlayerId)).playerType(selfPlayerType).build();
+        if (isWinner(output, inputReceived)) {
+            return Output.builder().result(-1).winner(true).build();
         }
-        log.info(String.valueOf(output));
         return output;
+    }
+
+    private boolean isWinner(Output output, int inputReceived) {
+        if (inputReceived <= ROOT) {
+            if ((inputReceived + ONE) / ROOT == ONE || inputReceived / ROOT == ONE) {
+                log.info("Player {} won ", System.getProperty("player.name"));
+                log.info(String.valueOf(output));
+                return true;
+            }
+        }
+        return false;
     }
 }
