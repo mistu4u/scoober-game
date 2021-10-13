@@ -6,9 +6,6 @@ services:
       - "6379:6379"
     container_name: redis
     hostname: redis
-#    networks:
-#      scoonet:
-#        - ipv4_address: 192.168.0.1
 
 
   scoober-1:
