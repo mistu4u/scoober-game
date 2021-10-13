@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -70,15 +69,17 @@ public class ScooberServiceImpl implements ScooberService {
     public void startGame() {
         log.info("\nChoose 1 of the following. \na) Initiate \nb) Wait for the opponent's turn ->");
         Scanner scanner = new Scanner(System.in);
-        if (scanner.nextLine().equalsIgnoreCase("a")) {
-            log.info("Please provide the starting number ->");
-            int init = Integer.parseInt(scanner.nextLine());
-            challengeOpponent(Input.builder()
-                    .input(init).playerName(this.selfPlayerName)
-                    .build());
-        } else {
-            log.info("Waiting for the opponent's turn");
-            //empty block, wait for the opponent's response
+        while (scanner.hasNextLine()) {
+            if (scanner.nextLine().equalsIgnoreCase("a")) {
+                log.info("Please provide the starting number ->");
+                int init = Integer.parseInt(scanner.nextLine());
+                challengeOpponent(Input.builder()
+                        .input(init).playerName(this.selfPlayerName)
+                        .build());
+            } else {
+                log.info("Waiting for the opponent's turn");
+                //empty block, wait for the opponent's response
+            }
         }
 
     }
