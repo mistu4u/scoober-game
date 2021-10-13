@@ -1,36 +1,36 @@
-version: '3'
+version: '3.9'
 services:
   redis:
     image: redis
     ports:
       - "6379:6379"
+    container_name: redis
+    hostname: redis
+#    networks:
+#      scoonet:
+#        - ipv4_address: 192.168.0.1
+
+
   scoober-1:
     image: scoober-1:latest
-#    user: root
-#    volumes:
-#      - /scripts/foo.sh:/c/foo.sh
     build:
-      dockerfile: Dockerfile
+      dockerfile: ./dockerfiles/app1/Dockerfile
       context: .
     container_name: scoober-1
-    #    command: sh -c "./foo.sh"
     ports:
       - "8080:8080"
     depends_on:
       - redis
-#    entrypoint: [ "sh","-c","/c/foo.sh" ]
+    hostname: scoober-1
+
   scoober-2:
     image: scoober-2:latest
-#    user: root
-#    volumes:
-#      - /scripts/foo.sh:/c/foo.sh
     build:
-      dockerfile: Dockerfile
+      dockerfile: ./dockerfiles/app2/Dockerfile
       context: .
     container_name: scoober-2
-    #    command: sh -c "./foo.sh"
     ports:
       - "9090:9090"
     depends_on:
       - redis
-#    entrypoint: [ "sh","-c","/c/foo.sh" ]
+    hostname: scoober-2
