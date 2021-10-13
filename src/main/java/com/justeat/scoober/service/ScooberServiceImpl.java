@@ -5,6 +5,7 @@ import com.justeat.scoober.entity.Output;
 import com.justeat.scoober.entity.PlayerType;
 import com.justeat.scoober.exception.ScooberException;
 import com.justeat.scoober.redis.MessagePublisher;
+import com.justeat.scoober.util.ScannerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -16,7 +17,7 @@ import java.util.Scanner;
 @Service
 @Slf4j
 public class ScooberServiceImpl implements ScooberService {
-    Scanner userInput = new Scanner(System.in);
+    Scanner userInput = ScannerUtil.getScanner();
     private static final int ROOT = 3;
     private static final int ONE = 1;
     private static final int ZERO = 0;
@@ -47,7 +48,6 @@ public class ScooberServiceImpl implements ScooberService {
 
     private void stopPlaying(Input input) {
         log.info("Opponent {} has won the game", input.getPlayerName());
-        playAgain();
     }
 
     private Input outputToInputConverter(Output output) {
@@ -68,37 +68,29 @@ public class ScooberServiceImpl implements ScooberService {
     @Override
     public void startGame() {
         log.info("\nChoose 1 of the following. \na) Initiate \nb) Wait for the opponent's turn ->");
-        Scanner scanner = new Scanner(System.in);
-        while (scanner.hasNextLine()) {
-            if (scanner.nextLine().equalsIgnoreCase("a")) {
-                log.info("Please provide the starting number ->");
-                int init = Integer.parseInt(scanner.nextLine());
-                challengeOpponent(Input.builder()
-                        .input(init).playerName(this.selfPlayerName)
-                        .build());
-            } else {
-                log.info("Waiting for the opponent's turn");
-                //empty block, wait for the opponent's response
-            }
+        Scanner scanner = ScannerUtil.getScanner();
+        String firstInput = scanner.nextLine();
+        if (firstInput.equalsIgnoreCase("a")) {
+            log.info("Please provide the starting number ->");
+            int init = Integer.parseInt(scanner.nextLine());
+            challengeOpponent(Input.builder()
+                    .input(init).playerName(this.selfPlayerName)
+                    .build());
+        } else {
+            log.info("Waiting for the opponent's turn");
+            //empty block, wait for the opponent's response
         }
+
 
     }
 
-    @Override
-    public void playAgain() {
-        log.info("Do you want to play again? [y/n] ->");
-        Scanner sc = new Scanner(System.in);
-        if (sc.next().equalsIgnoreCase("Y")) {
-            startGame();
-        }
-    }
+
 
     @Override
     public void stopGame(Input input) {
         log.info("Sending message to opponent about the win");
         messagePublisher.publish(input);
         log.info("Since the winner is decided, stopped the game");
-        playAgain();
     }
 
 
@@ -115,17 +107,23 @@ public class ScooberServiceImpl implements ScooberService {
 
     private Output playAutomatic(Input input, Output output) {
         int inputReceived = input.getInput();
-        if (inputReceived % ROOT == 0 && inputReceived > ROOT) {
+        if (inputReceived % ROOT == ZERO && inputReceived > ROOT) {
             return Output.builder().result(inputReceived / ROOT)
                     .playerType(selfPlayerType).build();
         }
         int afterOps = inputReceived + ONE;
         if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            if (isWinner(output, afterOps)) {
+                return Output.builder().result(-1).winner(true).build();
+            }
             return Output.builder().added(ONE).result(afterOps / ROOT)
                     .playerType(selfPlayerType).build();
         }
         afterOps = inputReceived - ONE;
         if (afterOps % ROOT == ZERO && inputReceived > ROOT) {
+            if (isWinner(output, afterOps)) {
+                return Output.builder().result(-1).winner(true).build();
+            }
             return Output.builder().added(-ONE).result(afterOps / ROOT)
                     .playerType(selfPlayerType).build();
         }
