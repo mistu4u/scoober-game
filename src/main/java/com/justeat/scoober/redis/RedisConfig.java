@@ -17,6 +17,10 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 
 @Configuration
 @Slf4j
+/**
+ * Configuration class for Redis
+ * Author: adhikarisubir@gmail.com
+ */
 public class RedisConfig {
 
 
@@ -30,7 +34,7 @@ public class RedisConfig {
     @Bean
     JedisConnectionFactory jedisConnectionFactory() {
         RedisStandaloneConfiguration redisStandaloneConfiguration
-                = new RedisStandaloneConfiguration("redis", 6379);
+                = new RedisStandaloneConfiguration(System.getProperty("redis.host"), 6379);
         return new JedisConnectionFactory(redisStandaloneConfiguration);
     }
 

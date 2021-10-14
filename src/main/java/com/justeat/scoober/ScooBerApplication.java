@@ -15,8 +15,6 @@ import java.util.Collections;
 @Profile("!test")
 public class ScooBerApplication implements CommandLineRunner {
     private ScooberService scooberService;
-    /*public static final String playerType = System.getProperty("player.type")
-            .equals("A") ? PlayerType.AUTOMATIC.getPlayerType() : PlayerType.MANUAL.getPlayerType();*/
     public static final String SERVER_PORT = System.getProperty("server.port");
 
     @Autowired
@@ -25,16 +23,8 @@ public class ScooBerApplication implements CommandLineRunner {
     }
 
     public static void main(String[] args) {
-
-
-        /*System.setProperty("player.name", username);
-        System.setProperty("player.type", playerType);
-        System.setProperty("redis.topic.self", selfTopic);
-        System.setProperty("redis.topic.client", clientTopic);*/
         log.info("\nProperties set, bringing up the application");
         SpringApplication app = new SpringApplication(ScooBerApplication.class);
-        System.out.println(System.getProperty("redis.topic.self"));
-        System.out.println(System.getProperty("redis.topic.client"));
         app.setDefaultProperties(Collections
                 .singletonMap("server.port", SERVER_PORT));
         app.run(args);
