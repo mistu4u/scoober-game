@@ -29,8 +29,10 @@ public class MessagePublisherImpl implements MessagePublisher {
     }
 
     public void publish(final Input message) {
-        log.info("message {} published to topic {}",message,topic.getTopic());
-        redisTemplate.convertAndSend(topic.getTopic(), message);
+        if (message.getInput()!= 0) {
+            log.info("message {} published to topic {}", message, topic.getTopic());
+            redisTemplate.convertAndSend(topic.getTopic(), message);
+        }
     }
 
 }

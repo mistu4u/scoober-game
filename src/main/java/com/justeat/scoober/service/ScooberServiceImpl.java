@@ -113,8 +113,7 @@ public class ScooberServiceImpl implements ScooberService {
         }
 
         if (in.ready()) {
-            System.out.println("You entered: " + in.readLine());
-            userInputstr = userInput.nextLine();
+            userInputstr = in.readLine();
         } else {
             log.info("You did not enter data");
             return playAutomatic(input, output);
