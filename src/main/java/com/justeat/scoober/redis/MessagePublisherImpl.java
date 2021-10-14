@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
+/**
+ * Redis publisher implementation
+ */
 public class MessagePublisherImpl implements MessagePublisher {
     @Autowired
     private RedisTemplate<String, Input> redisTemplate;

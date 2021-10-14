@@ -11,6 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Optional;
 import java.util.Scanner;
 
@@ -29,7 +32,7 @@ public class ScooberServiceImpl implements ScooberService {
     private MessagePublisher messagePublisher;
 
     @Override
-    public Input processOpponentInput(Input input) {
+    public Input processOpponentInput(Input input) throws InterruptedException, IOException {
         Output output = Output.builder().build();
         if (input.isWinner()) {
             stopPlaying(input);
@@ -85,7 +88,6 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
 
-
     @Override
     public void stopGame(Input input) {
         log.info("Sending message to opponent about the win");
@@ -94,12 +96,29 @@ public class ScooberServiceImpl implements ScooberService {
     }
 
 
-    private Output playManual(Input input, Output output) {
+    private Output playManual(Input input, Output output) throws InterruptedException, IOException {
+
         if (isWinner(output, input.getInput())) {
             return Output.builder().result(-1).winner(true).build();
         }
+        String userInputstr = "";
         log.info("Enter the number to be added (+1,-1 or 0) ->");
-        String userInputstr = userInput.nextLine();
+        int waitTime = 5; // wait 5 seconds at most
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        long startTime = System.currentTimeMillis();
+        while ((System.currentTimeMillis() - startTime) < waitTime * 1000
+                && !in.ready()) {
+            //Empty body to wait
+        }
+
+        if (in.ready()) {
+            System.out.println("You entered: " + in.readLine());
+            userInputstr = userInput.nextLine();
+        } else {
+            log.info("You did not enter data");
+            return playAutomatic(input, output);
+        }
         int added = Integer.parseInt(userInputstr);
         return Output.builder()
                 .added(added).result((input.getInput() + added) / ROOT).build();

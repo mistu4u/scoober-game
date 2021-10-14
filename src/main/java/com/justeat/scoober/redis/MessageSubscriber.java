@@ -16,6 +16,10 @@ import java.util.List;
 
 @Service
 @Slf4j
+/**
+ * Redis message subscriber class
+ * Author: adhikarisubir@gmail.com
+ */
 public class MessageSubscriber implements MessageListener {
     @Autowired
     private ScooberService scooberService;

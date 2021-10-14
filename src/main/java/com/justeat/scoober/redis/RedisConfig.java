@@ -17,6 +17,10 @@ import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 
 @Configuration
 @Slf4j
+/**
+ * Configuration class for Redis
+ * Author: adhikarisubir@gmail.com
+ */
 public class RedisConfig {
 
 

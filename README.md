@@ -3,9 +3,9 @@
 Please follow the below instructions to run the game.
 
 Pre requisites:
-***User must have Maven and Docker installed in his/her system.***
+***User must have [Maven](https://maven.apache.org/) and [Docker](https://docs.docker.com/get-docker/) installed in his/her system.***
 
-1) Download the source code from Github.
+1) Download the source code from [Github](https://github.com/mistu4u/scoober-game).
 2) Go to the root folder and run `mvn clean package` to build the jar file.
 3) Next run the command `docker-compose build` to build the image
 4) Run the command `docker-compose up -d` to bring up the containers
@@ -21,3 +21,4 @@ container shell to play it.
     To change the player name , set it `-Dplayer.name=<player-name>`
     To change the player type , set it `-Dplayer.type=A`
     A is automatic and M is manual.
+11) While playing manually, system waits for 5 seconds by default for an input else it continues playing automatically
